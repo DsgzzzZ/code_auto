@@ -1,0 +1,250 @@
+#set( $bigStartFlag = "{" )
+#set( $bigEndFlag = "}" )
+#set( $dollar = "$" )
+#set( $foreachStart = "<foreach" )
+#set( $foreachEnd = "</foreach>" )
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="${bussPackage}.dao.${className}Dao">
+    
+    <resultMap type="${bussPackage}.model.po.${className}" id="poResultMap">
+#foreach ($column in $columnDatas)
+        <result property="${column.fieldName}" column="${column.columnName}"/>
+#end
+    </resultMap>
+
+    <resultMap type="${bussPackage}.model.vo.${className}Vo" id="voResultMap">
+        #foreach ($column in $columnDatas)
+        <result property="${column.fieldName}" column="${column.columnName}"/>
+        #end
+
+    </resultMap>
+	
+	<sql id="baseColumnVo">
+        #foreach($column in $columnDatas) $column.columnName#if($velocityCount != $columnDatas.size()),#end#end
+    </sql>
+	
+    <select id="getList" parameterType="${bussPackage}.model.vo.${className}Vo" resultMap="voResultMap">
+        select <include refid="baseColumnVo"/> from ${tableName}
+        <where>  
+#foreach($column in $columnDatas)
+#if($column.fieldName=="createTime")
+            <if test="minCreateTime != null and minCreateTime != ''">and create_time &gt;= #${bigStartFlag} minCreateTime${bigEndFlag}</if>
+            <if test="maxCreateTime != null and maxCreateTime != ''">and create_time &lt;= #${bigStartFlag} maxCreateTime${bigEndFlag}</if>
+#elseif($column.fieldName=="updateTime")
+            <if test="minUpdateTime != null and minUpdateTime != ''">and update_time &gt;= #${bigStartFlag} minUpdateTime${bigEndFlag}</if>
+            <if test="maxUpdateTime != null and maxUpdateTime != ''">and update_time &lt;= #${bigStartFlag} maxUpdateTime${bigEndFlag}</if>
+#else
+            <if test="$column.fieldName != null #if($column.fieldType == 'String' ) and $column.fieldName.trim() != '' #end"> and $column.columnName = #{$column.fieldName}</if>
+#end
+#end
+        </where>
+    </select>
+
+    <select id="getOne" parameterType="${bussPackage}.model.vo.${className}Vo" resultMap="voResultMap">
+        select <include refid="baseColumnVo"/> from ${tableName}
+        <where>
+            #foreach($column in $columnDatas)
+            #if($column.fieldName=="createTime")
+            <if test="minCreateTime != null and minCreateTime != ''">and create_time &gt;= #${bigStartFlag} minCreateTime${bigEndFlag}</if>
+            <if test="maxCreateTime != null and maxCreateTime != ''">and create_time &lt;= #${bigStartFlag} maxCreateTime${bigEndFlag}</if>
+            #elseif($column.fieldName=="updateTime")
+            <if test="minUpdateTime != null and minUpdateTime != ''">and update_time &gt;= #${bigStartFlag} minUpdateTime${bigEndFlag}</if>
+            <if test="maxUpdateTime != null and maxUpdateTime != ''">and update_time &lt;= #${bigStartFlag} maxUpdateTime${bigEndFlag}</if>
+            #else
+            <if test="$column.fieldName != null #if($column.fieldType == 'String' ) and $column.fieldName.trim() != '' #end"> and $column.columnName = #{$column.fieldName}</if>
+            #end
+            #end
+        </where>
+        limit 1
+    </select>
+    
+    <select id="getById" parameterType="${bussPackage}.model.vo.${className}Vo" resultMap="voResultMap">
+        select <include refid="baseColumnVo"/> from ${tableName}
+        <where>
+ 			${key.columnName} = #{${key.fieldName}}
+        </where>
+    </select>
+        
+    <insert id="insert" parameterType="${bussPackage}.model.po.${className}" useGeneratedKeys="true" keyProperty="$key.fieldName">
+        insert into ${tableName}
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+#foreach($column in $columnDatas)
+#if(($column.columnName != $key.columnName) && $column.fieldName!="createTime" && $column.fieldName!="updateTime" && $column.fieldName!="version" && $column.fieldName!="tbStatus")
+            <if test="$column.fieldName != null #if($column.fieldType == 'String' ) and $column.fieldName != '' #end ">$column.columnName,</if>
+#end
+#end
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+#foreach($column in $columnDatas)
+#if(($column.columnName != $key.columnName) && $column.fieldName!="createTime" && $column.fieldName!="updateTime" && $column.fieldName!="version" && $column.fieldName!="tbStatus")
+            <if test="$column.fieldName != null #if($column.fieldType == 'String' ) and $column.fieldName != '' #end ">#{$column.fieldName},</if>
+#end
+#end
+        </trim>
+    </insert>
+	 
+    <update id="update" parameterType="${bussPackage}.model.po.${className}">
+        update ${tableName}
+        <trim prefix="SET" suffixOverrides=",">
+#foreach($column in $columnDatas)
+#if($column.fieldName=="version")
+        <if test="version != null  ">version = (#${bigStartFlag} version${bigEndFlag}+1),</if>
+#elseif(($column.columnName != $key.columnName) && ($column.fieldName!="createTime" && $column.fieldName!="updateTime") )
+        <if test="$column.fieldName != null #if($column.fieldType == 'String' ) and $column.fieldName != '' #end ">$column.columnName = #{$column.fieldName},</if>
+#end
+#end
+        </trim>
+        where ${key.columnName} = #{${key.fieldName}}
+#if($version)
+        and ${version.columnName} = #{${version.fieldName}}
+#end
+    </update>
+
+	<delete id="deleteById" parameterType="${key.fieldType}">
+        delete from ${tableName} where ${key.columnName} = #{${key.fieldName}}
+    </delete>
+	
+    <update id="deleteByIds" parameterType="String">
+        update ${tableName} set tb_status=0 where ${key.columnName} in
+        <foreach item="${key.fieldName}" collection="array" open="(" separator="," close=")">
+            #{${key.fieldName}}
+        </foreach>
+    </update>
+
+    <!-- ********************************** 使用LinkedHashMap作参数 ************************************* -->
+    <insert id="insertByBatch" parameterType="java.util.List">
+        insert into ${tableName}
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+#foreach($column in $columnDatas)
+#if(($column.columnName != $key.columnName) && $column.fieldName!="createTime" && $column.fieldName!="updateTime" && $column.fieldName!="version" && $column.fieldName!="tbStatus")
+            $column.columnName,
+#end
+#end
+        </trim> values
+            $foreachStart collection="list" item="entity" index="index" separator=",">
+                <trim prefix="(" suffix=")" suffixOverrides=",">
+#foreach($column in $columnDatas)
+#if(($column.columnName != $key.columnName) && $column.fieldName!="createTime" && $column.fieldName!="updateTime" && $column.fieldName!="version" && $column.fieldName!="tbStatus")
+                    #{entity.$column.fieldName},
+#end
+#end
+                </trim>
+            $foreachEnd
+
+    </insert>
+
+    <update id="updateBatch" parameterType="java.util.Map">
+        update ${tableName} set
+        $foreachStart collection="keyvalue" index="key" item="value" separator=",">
+            $dollar$bigStartFlag value$bigEndFlag
+            $dollar$bigStartFlag key$bigEndFlag
+        $foreachEnd
+        <where>
+            $foreachStart collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag
+                $dollar$bigStartFlag key$bigEndFlag
+            $foreachEnd
+        </where>
+    </update>
+
+    <select id="getOneByCondition" parameterType="java.util.Map" resultMap="voResultMap">
+        select
+        <if test="field == null">
+            <include refid="baseColumnVo" />
+        </if>
+        <if test="field != null">
+            ${field}
+        </if>
+        from ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+        limit 1;
+    </select>
+
+
+    <select id="getCountByCondition" parameterType="java.util.Map" resultType="java.lang.Integer">
+        select
+        count(${key.columnName})
+        from ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+    </select>
+
+    <select id="getAllByCondition" parameterType="java.util.Map" resultMap="voResultMap">
+        select
+        <if test="field == null">
+            <include refid="baseColumnVo" />
+        </if>
+        <if test="field != null">
+            ${field}
+        </if>
+        from ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+    </select>
+
+    <select id="getListByCondition" parameterType="java.util.Map" resultMap="voResultMap">
+        select
+        <if test="field == null">
+            <include refid="baseColumnVo" />
+        </if>
+        <if test="field != null">
+            ${field}
+        </if>
+        from ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+        <if test="order != null">
+            order by ${order}
+        </if>
+        <if test="limit != null">
+            <if test="offset != null">
+                limit ${offset}, ${limit}
+            </if>
+            <if test="offset == null">
+                limit ${limit}
+            </if>
+        </if>
+    </select>
+
+    <select id="groupConcatByField" parameterType="java.util.Map" resultType="String">
+        select GROUP_CONCAT(DISTINCT ${field}) FROM ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+    </select>
+
+    <update id="delBySign">
+        update ${tableName} set
+        tb_status = 0
+        WHERE
+        ${key.columnName} =#$bigStartFlag id$bigEndFlag
+    </update>
+
+    <delete id="deleteByCondition" parameterType="java.util.Map">
+        delete from ${tableName}
+        <where>
+            <foreach collection="condition" index="key" item="value">
+                $dollar$bigStartFlag value$bigEndFlag  $dollar$bigStartFlag key$bigEndFlag
+            </foreach>
+        </where>
+    </delete>
+
+</mapper>

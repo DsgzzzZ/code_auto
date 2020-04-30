@@ -1,0 +1,43 @@
+server: 
+  port: 8988
+  tomcat:
+    uri-encoding: UTF-8
+    
+ribbon.eureka.enabled: false
+
+spring:
+  application:
+    name: wangzhan
+  http:
+    encoding:
+      force: true
+      charset: UTF-8
+      enabled: true
+  mvc:
+    view:
+      prefix: /pages/
+      suffix: .html
+  resources:
+    static-locations: classpath:/static/
+      
+
+ #日志颜色
+  output:
+    ansi:
+      enabled: detect
+########################################################
+### 日志配置- logback:
+########################################################
+logging:
+  config: classpath:logback-spring.xml
+  
+########################################################
+### 腾讯云存储- cos:
+######################################################## 
+cos:
+  appid: 1253499089
+  secretId: 123
+  secretKey: 123
+
+  
+

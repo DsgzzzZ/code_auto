@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="${bussPackage}.mapper.${className}Mapper" > 
+<!-- Result Map-->
+<resultMap id="BaseResultMap" type="${bussPackage}.entity.$!{className}" >
+#set($temp=0)
+#foreach($item in $!{columnDatas})
+	#set($temp=$temp+1)
+	#if($temp==1)
+	<id column="$!item.columnName" property="$item.fieldName"/>
+	#else
+	<result column="$!item.columnName" property="$item.fieldName"/>
+	#end
+#end
+</resultMap>
+
+       
+<!-- $!{tableName} 表字段 -->
+<sql id="Base_Column_List" >
+	 $!{SQL.columnFields}
+</sql>
+
+
+
+	  	 <!-- 条件查询列表 -->
+	<select id="getListData" 
+		resultMap="BaseResultMap" >
+		SELECT
+		<include refid="Base_Column_List" />
+		from $!{tableName}
+		where  1=1
+		<if test="ew!=null">
+			${ew.sqlSegment}
+		</if>
+	</select> 
+
+</mapper>   

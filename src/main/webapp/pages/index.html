@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+	<title>代码生成-V1.0</title>
+	<link rel="stylesheet" href="../static/css/element/element.css">
+</head>
+
+<body>
+	<div id="index">
+		<center>
+			<div class="panleForm">
+				<p class="codeTitle">代码生成工具V1.0 By_mohanwen</p>
+				<el-form :model="form" ref="form" style="margin-top:30px">
+					<el-form-item prop="url" :rules="[{ required: true, message: '链接地址不能为空'}]">
+						<el-input placeholder="请输入数据库链接地址:端口号" v-model="form.url">
+							<template slot="prepend">数据库链接地址</template>
+						</el-input>
+					</el-form-item>
+
+					<el-form-item prop="userName" :rules="[{ required: true, message: '数据库用户名不能为空'}]">
+						<el-input placeholder="请输入数据库用户名" v-model="form.userName">
+							<template slot="prepend">&nbsp;&nbsp;&nbsp;数据库用户名</template>
+						</el-input>
+					</el-form-item>
+					<el-form-item prop="password" :rules="[{ required: true, message: '数据库密码不能为空'}]">
+						<el-input placeholder="请输入数据库密码" v-model="form.password">
+							<template slot="prepend">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;数据库密码</template>
+						</el-input>
+					</el-form-item>
+
+					<el-form-item prop="dataBaseName" :rules="[{ required: true, message: '数据库名称不能为空'}]">
+						<el-input placeholder="请输入数据库名称" v-model="form.dataBaseName">
+							<template slot="prepend">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;数据库名称</template>
+						</el-input>
+					</el-form-item>
+
+					<el-button type="primary" class="buttonRow" @click="submit()">提交输入</el-button>
+					<el-button type="default" class="buttonRow" @click="reset()">清空输入</el-button>
+
+				</el-form>
+			</div>
+
+			<!--form 结束-->
+
+			<el-dialog title="表数据" :visible.sync="dialogVisible" width="60%">
+
+				<template>
+					<div style="text-align: center">
+						<el-transfer style="text-align: left; display: inline-block" v-model="value4" filterable :left-default-checked="[]" :right-default-checked="[1]"
+						    :titles="['源数据', '待生成']" :button-texts="['到左边', '到右边']" :format="{
+			        noChecked: '${total}',
+			        hasChecked: '${checked}/${total}'
+				  }" :data="data" filter-placeholder="请输入表注释">
+							<span slot-scope="{ option }">{{ option.key }} - {{ option.label }}</span>
+						</el-transfer>
+					</div>
+				</template>
+
+				<el-form :model="form2" ref="form2" style="margin-top:30px">
+					<el-row>
+						<el-col :span="8">
+							<el-form-item prop="userName" :rules="[{ required: true, message: '代码创建者不能为空'}]">
+								<el-input placeholder="创建者" v-model="form2.userName">
+									<template slot="prepend">代码创建者</template>
+								</el-input>
+							</el-form-item>
+						</el-col>
+
+						<el-col :span="7" style="margin-left:20px">
+							<el-form-item prop="packageName" :rules="[{ required: true, message: '项目包名不能为空'}]">
+								<el-input placeholder="包名" v-model="form2.packageName">
+									<template slot="prepend">项目包名</template>
+								</el-input>
+							</el-form-item>
+						</el-col>
+
+						<el-col :span="7" style="margin-left:20px">
+							<el-form-item prop="savePath" :rules="[{ required: true, message: '保存路径不能为空'}]">
+								<el-input placeholder="路径" v-model="form2.savePath">
+									<template slot="prepend">保存路径</template>
+								</el-input>
+							</el-form-item>
+						</el-col>
+					</el-row>
+				</el-form>
+
+				<div class="dialogButton">
+					<el-button @click="dialogVisible = false">关闭</el-button>
+					<el-button type="primary" @click="codeCreate">生成</el-button>
+				</div>
+			</el-dialog>
+
+		</center>
+		<!-- 页面End -->
+	</div>
+
+</body>
+<!-- import Vue before Element -->
+<script src="../static/js/element/vue.js"></script>
+
+<!-- import vue-touch -->
+<script src="../static/js/element/vue-touch.js"></script>
+<!-- import JavaScript -->
+<script src="../static/js/element/element.js"></script>
+
+<script src="../static/js/main/api/index.js"></script>
+<script>
+	new Vue({
+		el: '#index',
+		data: function () {
+			return {
+				form: {
+					url: '127.0.0.1:3306',
+					userName: 'root',
+					password: 'root',
+					dataBaseName: 'baop_resdource'
+				},
+				form2: {
+					userName:'mp',
+					packageName:'com.htgx.baop',
+					savePath:'D:\\workspace\\eclipse\\huitone\\baop-microservices',
+				}
+
+				,
+				dialogVisible: false,
+				data: [],
+				value4: [],
+
+			}
+		},
+		methods: {
+			reset() {
+				this.form = {};
+			},
+			submit() {
+				this.$refs['form'].validate((valid) => {
+					if (valid) {
+						let loading = this.$loading({
+							text: '正在加载数据~~',
+							fullscreen: true
+						})
+						getTableDate(this.form).then((response) => {
+							loading.close();
+							if (response.code != 0) {
+								this.$message.error(response.message);
+							} else {
+								const data = [];
+								for (let i = 0; i < response.data.length; i++) {
+									data.push({
+										key: response.data[i].split("∞")[0],
+										label: response.data[i].split("∞")[1],
+									});
+								}
+								this.data = data;
+								this.dialogVisible = true;
+							}
+						});
+					} else {
+						this.$alert('请验证输入内容是否正确')
+					}
+				})
+
+			},
+			codeCreate() {
+				let sourceData = this.data;
+				let targetData = this.value4;
+				if (targetData == null || targetData.length <= 0 || targetData == undefined) {
+					this.$message.error("待生成列表没有数据");
+					return;
+				}
+				//tableName 和描述用~.^_^.~ 分割
+				for (let i = 0; i < targetData.length; i++) {
+					for (let a = 0; a < sourceData.length; a++) {
+						if (sourceData[a].key === targetData[i]) {
+							targetData[i] = targetData[i] + "∞" + sourceData[a].label
+						}
+					}
+				}
+
+				//创建
+				let tableNames = targetData.join("∝");
+				//分割
+				createData(tableNames, this.form2).then((response) => {
+					if (response.code != 0) {
+						this.$message.error(response.message);
+					} else {
+						this.dialogVisible = false;
+						this.data = [];
+						this.value4=[];
+						this.$alert('恭喜您，代码生成成功')
+					}
+				})
+			}
+
+
+		},
+		mounted() {
+
+
+		}
+	})
+</script>
+
+<style>
+	.panleForm {
+		width: 50%;
+		padding: 30px;
+		background: #fff;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+		margin-top: 40px;
+	}
+
+	.inputRow {
+		margin-top: 10px;
+	}
+
+	.buttonRow {
+		margin-top: 30px;
+	}
+
+	.el-transfer-panel {
+		
+		width:37%;
+	}
+
+	.el-dialog {
+		height: 570px;
+	}
+
+	.el-transfer__buttons {
+		margin-top: 85px;
+	}
+
+	.dialogButton {
+		position: absolute;
+		bottom: 50px;
+		width: 100%;
+	}
+
+	.el-checkbox__label {
+		margin-top: 10px;
+	}
+
+	.codeTitle {
+		color: #cc9933;
+	}
+</style>
+
+</html>
